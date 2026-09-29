@@ -1,4 +1,5 @@
-using BCrypt.Net;
+ using BCrypt.Net;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -8,11 +9,15 @@ using NhanVanAPi.Data;
 using NhanVanAPi.DTOs;
 using NhanVanAPi.Models;
 using NhanVanAPi.Services;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
 
 namespace NhanVanAPi.Controllers;
+
+// IActionresult returns a HTTP response
+// promise that something will finish in the future.
 
 [ApiController]
 [Route("api/[controller]")] // define the Url 
@@ -102,14 +107,50 @@ public class AuthController : ControllerBase
         var roles = await _userManager.GetRolesAsync(user);
         var (token, expiresAt) = _tokenService.GenerateToken(user, roles);
 
-        return Ok(new AuthResponseDto
+        // send the HttpOnly cookie,  JWT is stored into a cookie . JS cant read it because it is http only
+        Response.Cookies.Append("token", token, new CookieOptions
         {
-            Token = token,
-            Email = user.Email!,
+            HttpOnly = true, // sent Auth cookies
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Expires = expiresAt
+        });
+
+        return Ok(new
+        {
+            Email = user.Email,
             FullName = user.FullName,
             Role = roles.FirstOrDefault() ?? "Student",
             ExpiresAt = expiresAt
         });
     }
+
+    // because browser cant read the HTTP Cookie, this endpoint will help to tell who loggin . Call this to verify loggin 
+
+    [HttpGet("me")]
+    [Authorize]
+    public IActionResult Me()
+    {
+        return Ok(new
+        {
+            Email = User.FindFirstValue(ClaimTypes.Email),
+            FullName = User.FindFirstValue(ClaimTypes.Name),
+            Role = User.FindFirstValue(ClaimTypes.Role) ?? "Student"
+        });
+    }
+
+    [HttpPost("logout")]
+    public IActionResult LogOut()
+    {
+        Response.Cookies.Delete("token", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None
+        });
+        return Ok(new { message = "Logged out successfully." });
+
+    }
+
 
 }

@@ -39,7 +39,9 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("http://localhost:3000")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod().
+              AllowCredentials(); // Backend, it's okay to accept credentials/cookies from the frontend I allowed
+
     });
 });
 
@@ -65,11 +67,22 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
+    //read the cookie to get the token, we need to teach 
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            if (context.Request.Cookies.TryGetValue("token", out var token))
+            {
+                context.Token = token;
+            }
+            return Task.CompletedTask;
+        }
+    };
+
 });
 
 builder.Services.AddAuthorization(); //it enables the [Authorize] attribute you'll put on controllers/endpoints later
-
-
 
 
 var app = builder.Build();
