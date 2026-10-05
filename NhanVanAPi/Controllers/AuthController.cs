@@ -101,7 +101,7 @@ public class AuthController : ControllerBase
 
         if (!user.EmailConfirmed)
         {
-            return Unauthorized("Please confirm your email before logging in.");
+            return Unauthorized("Please confirm your email before logging in. Check your Email");
         }
 
         var roles = await _userManager.GetRolesAsync(user);
@@ -120,6 +120,8 @@ public class AuthController : ControllerBase
         {
             Email = user.Email,
             FullName = user.FullName,
+            DOB = user.DateOfBirth,
+            Phone = user.PhoneNumber,
             Role = roles.FirstOrDefault() ?? "Student",
             ExpiresAt = expiresAt
         });
