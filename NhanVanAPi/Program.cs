@@ -31,6 +31,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
+
 //Add cors ( cross origin resources sharing)
 
 builder.Services.AddCors(options =>
@@ -95,6 +96,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles(); // files in wwwroot can be opened by URL, e.g. https://localhost:xxxx/avatars/abc.jpg
+
 app.UseCors("CallFrontEnd");   // order matter , must be after UseHttpsRedirection and before authentication 
 
 

@@ -151,8 +151,5 @@ public class AuthController : ControllerBase
             SameSite = SameSiteMode.None
         });
         return Ok(new { message = "Logged out successfully." });
-
     }
-
-
 }
