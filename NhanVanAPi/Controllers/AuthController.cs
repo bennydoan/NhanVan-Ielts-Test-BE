@@ -1,4 +1,5 @@
  using BCrypt.Net;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -23,16 +24,17 @@ namespace NhanVanAPi.Controllers;
 [Route("api/[controller]")] // define the Url 
 public class AuthController : ControllerBase
 {
+    private readonly IConfiguration _config;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly TokenService _tokenService;
     private readonly EmailService _emailService;
 
     //create constructor
-    public AuthController(UserManager<ApplicationUser> userManager, TokenService tokenService, EmailService emailService) { 
+    public AuthController( IConfiguration config,UserManager<ApplicationUser> userManager, TokenService tokenService, EmailService emailService) { 
         _userManager = userManager;
         _tokenService = tokenService;
         _emailService = emailService;
-
+        _config = config; // the read the appsetting.json 
     }
 
     // IActionResult allows you to return different types of HTTP responses.
@@ -152,4 +154,67 @@ public class AuthController : ControllerBase
         });
         return Ok(new { message = "Logged out successfully." });
     }
+
+    [HttpPost("google")]
+    public async Task<IActionResult> GoogleLogin (GoogleLoginDtos dto)
+    {
+        GoogleJsonWebSignature.Payload payload; // payload has all user info : Email, name, google ID, picture
+        // verify that token realy come from Google and from  Front end 
+
+        try
+        {
+            payload = await GoogleJsonWebSignature.ValidateAsync(dto.IdToken,// check the Id Token is valid or not 
+                new GoogleJsonWebSignature.ValidationSettings
+                {
+                    Audience = new[] { _config["Google:ClientId"] } // When validating this token, make sure it was created for my application. The ID that identifies your application to Google
+                });
+            //it checks if the audience token's  client ID matches client id in app setting 
+
+        }
+        catch(InvalidJwtException)
+        {
+            return Unauthorized("Invalid Google Token");
+
+        }
+
+        // find user or create one
+
+        var user = await _userManager.FindByEmailAsync(payload.Email);
+        if(user is null)
+        {
+            user = new ApplicationUser
+            {
+                Email = payload.Email,
+                UserName = payload.Email,
+                FullName = payload.Name ?? "",
+                EmailConfirmed = true
+            };
+            var createResult = await _userManager.CreateAsync(user); // no password!
+            if (!createResult.Succeeded)
+            {
+                return BadRequest(string.Join("", createResult.Errors.Select(e => e.Description)));
+            }
+        }
+       
+
+        var roles= await _userManager.GetRolesAsync(user);
+        var (token, expireAt) = _tokenService.GenerateToken(user, roles);
+        Response.Cookies.Append("token", token, new CookieOptions
+        {
+            HttpOnly = true,// front end cant read token  
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Expires = expireAt
+        });
+
+        return Ok(new
+        {
+            Email = user.Email,
+            FullName = user.FullName,
+            Role = roles.FirstOrDefault() ?? "Student",
+            ExpiresAt = expireAt
+        });
+    }
+    
+
 }
