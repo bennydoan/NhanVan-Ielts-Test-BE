@@ -98,7 +98,7 @@ namespace NhanVanAPi.Controllers
             // 2. new random file name (don't use the user's file name: it could clash or contain "../"). Avoiding collision, should be unique per user 
             var fileName = $"{Guid.NewGuid()}{ext}"; //8f4c8d52-9a8e-4a4c-b2b9-6d5c2a1f4abc.jpg
             var folder = Path.Combine(env.WebRootPath, "avatars"); // C:\Users\benny\OneDrive\Desktop\NhanVan\NhanVan-Ielts-Test-BE\NhanVanApi + "avatars"
-            Directory.CreateDirectory(folder);
+            Directory.CreateDirectory(folder); // if folder has not been created -> create on 
 
             using (var stream = new FileStream(Path.Combine(folder, fileName), FileMode.Create))
             {
