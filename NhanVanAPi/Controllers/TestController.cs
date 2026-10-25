@@ -28,7 +28,6 @@ namespace NhanVanAPi.Controllers
             if (category != null)
             {
                 getTest = getTest.Where(t => t.Category == category);  // ✅ adds to the existing filter
-
             }
 
             var tests = await getTest.OrderByDescending(t => t.Id).Select(t => new TestBankDto
@@ -62,7 +61,7 @@ namespace NhanVanAPi.Controllers
             return Ok(test);
         }
 
-        
+       
 
         // get one test with all its sections, groups and questions (NO answers)
 

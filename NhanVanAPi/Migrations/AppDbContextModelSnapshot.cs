@@ -260,7 +260,7 @@ namespace NhanVanAPi.Migrations
                     b.HasIndex("QuestionGroupId", "QuestionNumber")
                         .IsUnique();
 
-                    b.ToTable("Question");
+                    b.ToTable("Questions");
                 });
 
             modelBuilder.Entity("NhanVanAPi.Models.QuestionGroup", b =>
@@ -443,12 +443,14 @@ namespace NhanVanAPi.Migrations
 
                             b1.Property<string>("Content");
 
+                            b1.Property<int?>("QuestionNumber");
+
                             b1.Property<string>("Type")
                                 .IsRequired();
 
                             b1.HasKey("QuestionId", "__synthesizedOrdinal");
 
-                            b1.ToTable("Question");
+                            b1.ToTable("Questions");
 
                             b1
                                 .ToJson("Passage")
@@ -478,7 +480,7 @@ namespace NhanVanAPi.Migrations
 
                             b1.Property<string>("Content");
 
-                            b1.Property<int?>("QuestionId");
+                            b1.Property<int?>("QuestionNumber");
 
                             b1.Property<string>("Type")
                                 .IsRequired();
