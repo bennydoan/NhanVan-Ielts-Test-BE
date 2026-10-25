@@ -17,7 +17,7 @@ namespace NhanVanAPi.Data
 
         public DbSet<QuestionGroup> QuestionGroups { get; set; }
 
-        //public DbSet<Question> Questions { get; set; }
+        public DbSet<Question> Questions { get; set; }
 
         // fluent API to configure how the Etity is stored in DB - We can also use the DataAnnotation 
         protected override void OnModelCreating(ModelBuilder builder)
