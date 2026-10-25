@@ -230,6 +230,88 @@ namespace NhanVanAPi.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("NhanVanAPi.Models.Question", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.PrimitiveCollection<string>("CorrectAnswers")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.PrimitiveCollection<string>("Options")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Prompt")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("QuestionGroupId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuestionNumber")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionGroupId", "QuestionNumber")
+                        .IsUnique();
+
+                    b.ToTable("Question");
+                });
+
+            modelBuilder.Entity("NhanVanAPi.Models.QuestionGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Context")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImageAlt")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Instructions")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.PrimitiveCollection<string>("SharedOptions")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TestSectionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TestSectionId", "Order")
+                        .IsUnique();
+
+                    b.ToTable("QuestionGroups");
+                });
+
             modelBuilder.Entity("NhanVanAPi.Models.TestBank", b =>
                 {
                     b.Property<int>("Id")
@@ -262,6 +344,35 @@ namespace NhanVanAPi.Migrations
                     b.HasIndex("Category");
 
                     b.ToTable("TestBank");
+                });
+
+            modelBuilder.Entity("NhanVanAPi.Models.TestSection", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AudioUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PassageText")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SectionNumber")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TestBankId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TestBankId", "SectionNumber")
+                        .IsUnique();
+
+                    b.ToTable("TestSections");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -313,6 +424,102 @@ namespace NhanVanAPi.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("NhanVanAPi.Models.Question", b =>
+                {
+                    b.HasOne("NhanVanAPi.Models.QuestionGroup", null)
+                        .WithMany("Questions")
+                        .HasForeignKey("QuestionGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsMany("NhanVanAPi.Models.PassagePart", "Passage", b1 =>
+                        {
+                            b1.Property<int>("QuestionId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAddOrUpdate();
+
+                            b1.Property<string>("Content");
+
+                            b1.Property<string>("Type")
+                                .IsRequired();
+
+                            b1.HasKey("QuestionId", "__synthesizedOrdinal");
+
+                            b1.ToTable("Question");
+
+                            b1
+                                .ToJson("Passage")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("QuestionId");
+                        });
+
+                    b.Navigation("Passage");
+                });
+
+            modelBuilder.Entity("NhanVanAPi.Models.QuestionGroup", b =>
+                {
+                    b.HasOne("NhanVanAPi.Models.TestSection", null)
+                        .WithMany("Groups")
+                        .HasForeignKey("TestSectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsMany("NhanVanAPi.Models.PassagePart", "Passages", b1 =>
+                        {
+                            b1.Property<int>("QuestionGroupId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAddOrUpdate();
+
+                            b1.Property<string>("Content");
+
+                            b1.Property<int?>("QuestionId");
+
+                            b1.Property<string>("Type")
+                                .IsRequired();
+
+                            b1.HasKey("QuestionGroupId", "__synthesizedOrdinal");
+
+                            b1.ToTable("QuestionGroups");
+
+                            b1
+                                .ToJson("Passages")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("QuestionGroupId");
+                        });
+
+                    b.Navigation("Passages");
+                });
+
+            modelBuilder.Entity("NhanVanAPi.Models.TestSection", b =>
+                {
+                    b.HasOne("NhanVanAPi.Models.TestBank", null)
+                        .WithMany("Sections")
+                        .HasForeignKey("TestBankId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("NhanVanAPi.Models.QuestionGroup", b =>
+                {
+                    b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("NhanVanAPi.Models.TestBank", b =>
+                {
+                    b.Navigation("Sections");
+                });
+
+            modelBuilder.Entity("NhanVanAPi.Models.TestSection", b =>
+                {
+                    b.Navigation("Groups");
                 });
 #pragma warning restore 612, 618
         }
