@@ -8,5 +8,7 @@
         public TestCategory Category { get; set; }
         public bool IsPublished { get; set; } = false; // for admin if they want to publish the test
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public List<TestSection> Sections { get; set; } = new(); // one test → many sections
+
     }
 }

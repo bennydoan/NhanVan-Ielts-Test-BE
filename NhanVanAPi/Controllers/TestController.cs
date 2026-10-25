@@ -13,7 +13,8 @@ namespace NhanVanAPi.Controllers
     public class TestController : ControllerBase
     {
         private readonly AppDbContext _db;
-        public TestController(AppDbContext db) {
+        public TestController(AppDbContext db)
+        {
             _db = db;
         }
 
@@ -47,18 +48,73 @@ namespace NhanVanAPi.Controllers
             var test = await _db.TestBank.Where(t => t.Id == id && t.IsPublished == true).
                 Select(t => new TestBankDto
                 {
-                    Id =t.Id,
-                    Title=t.Title,
-                    DurationMinutes=t.DurationMinutes,
-                    Category =t.Category.ToString()
+                    Id = t.Id,
+                    Title = t.Title,
+                    DurationMinutes = t.DurationMinutes,
+                    Category = t.Category.ToString()
                 }).FirstOrDefaultAsync();
 
-            if(test == null)
+            if (test == null)
             {
                 return NotFound("Test can not be found");
             }
 
             return Ok(test);
+        }
+
+        
+
+        // get one test with all its sections, groups and questions (NO answers)
+
+        [AllowAnonymous]
+        [HttpGet("get-test-content/{id:int}")]
+        public async Task<ActionResult<TestDetailDto>> GetTestContent(int id)
+        {
+            // get test first and then get everything that linked to it 
+
+            var test = await _db.TestBank.AsNoTracking()                              // read-only, faster
+            .Include(s=>s.Sections).
+            ThenInclude(g=>g.Groups).
+            ThenInclude(q => q.Questions).FirstOrDefaultAsync(t=>t.Id == id && t.IsPublished == true);
+
+            if (test == null) return NotFound("Can not find test!");
+
+            var dto = new TestDetailDto
+            {
+                Id = test.Id,
+                Title = test.Title,
+                DurationMinutes = test.DurationMinutes,
+                Category = test.Category.ToString(),
+                Sections = test.Sections.OrderBy(s => s.SectionNumber).Select(s => new TestSectionDto
+                {
+                    Id = s.Id,
+                    SectionNumber = s.SectionNumber,
+                    AudioUrl = s.AudioUrl,
+                    PassageText = s.PassageText,
+                    Groups = s.Groups.OrderBy(g => g.Order).Select(g=> new QuestionGroupDto
+                    {
+                        
+                        Label = g.Label,
+                        Type = g.Type.ToString(),
+                        Instructions = g.Instructions,
+                        Context = g.Context,
+                        ImageUrl = g.ImageUrl,
+                        ImageAlt = g.ImageAlt,
+                        Passage = g.Passages,
+                        SharedOptions = g.SharedOptions,
+                        Questions = g.Questions
+                            .OrderBy(q => q.QuestionNumber)
+                            .Select(q => new QuestionDto // no correct answers
+                            {
+                                QuestionNumber = q.QuestionNumber,
+                                Prompt = q.Prompt,
+                                Options = q.Options,
+                                Passage = q.Passage
+                            }).ToList()
+                    }).ToList()
+                }).ToList()
+            };
+            return Ok(dto);
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace NhanVanAPi.DTOs
+﻿using NhanVanAPi.Models;
+
+namespace NhanVanAPi.DTOs
 {
     public class TestBankDto
     {
