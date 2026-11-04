@@ -107,6 +107,7 @@ public class AuthController : ControllerBase
         }
 
         var roles = await _userManager.GetRolesAsync(user);
+        //when login successfully 
         var (token, expiresAt) = _tokenService.GenerateToken(user, roles);
 
         // send the HttpOnly cookie,  JWT is stored into a cookie . JS cant read it because it is http only
@@ -160,7 +161,6 @@ public class AuthController : ControllerBase
     {
         GoogleJsonWebSignature.Payload payload; // payload has all user info : Email, name, google ID, picture
         // verify that token realy come from Google and from  Front end 
-
         try
         {
             payload = await GoogleJsonWebSignature.ValidateAsync(dto.IdToken,// check the Id Token is valid or not 
@@ -215,6 +215,4 @@ public class AuthController : ControllerBase
             ExpiresAt = expireAt
         });
     }
-    
-
 }
