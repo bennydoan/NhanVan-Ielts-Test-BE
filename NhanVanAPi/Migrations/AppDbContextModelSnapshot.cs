@@ -312,6 +312,43 @@ namespace NhanVanAPi.Migrations
                     b.ToTable("QuestionGroups");
                 });
 
+            modelBuilder.Entity("NhanVanAPi.Models.Submission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Band")
+                        .HasPrecision(2, 1)
+                        .HasColumnType("decimal(2,1)");
+
+                    b.Property<int>("RawScore")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TestBankId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TimeTakenSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TestBankId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Submissions");
+                });
+
             modelBuilder.Entity("NhanVanAPi.Models.TestBank", b =>
                 {
                     b.Property<int>("Id")
@@ -498,6 +535,48 @@ namespace NhanVanAPi.Migrations
                         });
 
                     b.Navigation("Passages");
+                });
+
+            modelBuilder.Entity("NhanVanAPi.Models.Submission", b =>
+                {
+                    b.HasOne("NhanVanAPi.Models.TestBank", null)
+                        .WithMany()
+                        .HasForeignKey("TestBankId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NhanVanAPi.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsMany("NhanVanAPi.Models.SubmissionAnswer", "Answers", b1 =>
+                        {
+                            b1.Property<int>("SubmissionId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAddOrUpdate();
+
+                            b1.Property<bool>("IsCorrect");
+
+                            b1.Property<int>("QuestionNumber");
+
+                            b1.Property<string>("UserAnswer");
+
+                            b1.HasKey("SubmissionId", "__synthesizedOrdinal");
+
+                            b1.ToTable("Submissions");
+
+                            b1
+                                .ToJson("Answers")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SubmissionId");
+                        });
+
+                    b.Navigation("Answers");
                 });
 
             modelBuilder.Entity("NhanVanAPi.Models.TestSection", b =>

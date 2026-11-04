@@ -19,6 +19,9 @@ namespace NhanVanAPi.Data
 
         public DbSet<Question> Questions { get; set; }
 
+        public DbSet<Submission> Submissions { get; set; }
+
+
         // fluent API to configure how the Etity is stored in DB - We can also use the DataAnnotation 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -65,6 +68,17 @@ namespace NhanVanAPi.Data
                 entity.HasIndex(q => new { q.QuestionGroupId, q.QuestionNumber }).IsUnique(); // no duplicate "Question 3" in a group
                 entity.OwnsMany(q => q.Passage, p => p.ToJson()); // List<PassagePart> → JSON column
             });
+
+            builder.Entity<Submission>(entity =>
+            {
+                entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(s=>s.UserId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<TestBank>().WithMany().HasForeignKey(t => t.TestBankId).OnDelete(DeleteBehavior.Cascade);
+                entity.Property(s => s.Band).HasPrecision(2, 1); //maximum to digits and on decimal number after , 
+
+                entity.HasIndex(s => s.UserId);
+                entity.OwnsMany(s => s.Answers, a => a.ToJson());
+            });
+
 
         }
     }
