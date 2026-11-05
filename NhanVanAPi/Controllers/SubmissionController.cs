@@ -23,22 +23,29 @@ namespace NhanVanAPi.Controllers
             _db = db;   
         }
 
-        private static SubmissionResultDto ToDto(Submission s) => new() // new () return a new SubmissionResultDto
+        private static SubmissionResultDto ToDto(Submission s, IEnumerable<Question> questions)
         {
-            SubmissionId = s.Id,
-            TestId = s.TestBankId,
-            RawScore = s.RawScore,
-            Band = s.Band,
-            TimeTakenSeconds = s.TimeTakenSeconds,
-            SubmittedAt = s.SubmittedAt,
-            Answers = s.Answers.Select(a => new SubmissionAnswerDto
+            var questionNumberAndCorrectAnswer = questions.ToDictionary(q => q.QuestionNumber, q => q.CorrectAnswers);
+            return new SubmissionResultDto
             {
-                QuestionNumber = a.QuestionNumber,
-                UserAnswer = a.UserAnswer,
-                IsCorrect = a.IsCorrect
-            }).ToList()
-        };
+                SubmissionId = s.Id,
+                TestId = s.TestBankId,
+                RawScore = s.RawScore,
+                Band = s.Band,
+                TimeTakenSeconds = s.TimeTakenSeconds,
+                SubmittedAt = s.SubmittedAt,
+                Answers = s.Answers.Select(a => new SubmissionAnswerDto
+                {
+                    QuestionNumber = a.QuestionNumber,
+                    UserAnswer = a.UserAnswer,
+                    IsCorrect = a.IsCorrect,
+                    CorrectAnswers = questionNumberAndCorrectAnswer.GetValueOrDefault(a.QuestionNumber) ?? new()
 
+                }).ToList()
+            };
+
+        }
+        
         //submit test endpoint
         [HttpPost("submit")]
         public async Task<ActionResult<SubmissionAnswerDto>> SubmitTest (SubmitTestDto dto)
@@ -90,19 +97,20 @@ namespace NhanVanAPi.Controllers
 
             await _db.SaveChangesAsync();          // after this, submission.Id is filled in
 
-            return Ok(ToDto(submission));
+            return Ok(ToDto(submission,questions));
         }
 
         // get TestHistory
-        [HttpGet("history/{testId:int}")]
-        public async Task<ActionResult<List<GetSubmissonHistoryDTO>>> GetSubmissionHistory(int testId)
+
+        [HttpGet("history/{testID:int}")]
+        public async Task<ActionResult<List<GetSubmissonHistoryDTO>>> GetSubmissionHistory(int testID)
         {
             // must loggin first 
             var user = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (user == null) return Unauthorized();
 
             var submissionHistory = await _db.Submissions
-                .Where(s => s.UserId == user && s.TestBankId == testId)
+                .Where(s => s.UserId == user && s.TestBankId == testID)
                 .OrderByDescending(s => s.SubmittedAt)
                 .Select(s => new GetSubmissonHistoryDTO
                 {
@@ -116,6 +124,29 @@ namespace NhanVanAPi.Controllers
             return Ok(submissionHistory);
         }
 
+        //Get Submission 
+
+        // get one result, only if it belongs to this user
+        
+        [HttpGet("getSubmissionResult/{submissionID:int}")]
+        public async Task<ActionResult<SubmissionResultDto>> GetSubmissionResult(int submissionID)
+        {
+            var user = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (user == null) return Unauthorized();
+
+            var submission = await _db.Submissions.AsNoTracking() // for reading only 
+                .FirstOrDefaultAsync(s => s.Id == submissionID && s.UserId == user);
+            if (submission == null) return NotFound("Can not find submission!");
+
+            var test = await _db.TestBank.AsNoTracking()
+                .Include(s => s.Sections).ThenInclude(g => g.Groups).ThenInclude(q => q.Questions)
+                .FirstOrDefaultAsync(t => t.Id == submission.TestBankId);
+            if (test == null) return NotFound("Can not find test!");
+
+            var questions = test.Sections.SelectMany(s => s.Groups).SelectMany(g => g.Questions);
+
+            return Ok(ToDto(submission, questions));
+        }
 
 
     }
